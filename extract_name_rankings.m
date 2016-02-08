@@ -1,5 +1,4 @@
 function [names_rank, num_named, yr] = extract_name_rankings(filename,varargin)
-
 if nargin < 1
     file_dir = fullfile(pwd,'data');
     filename = 'yob1880.txt';
@@ -54,8 +53,6 @@ try
         iM = iM + (split_line{2} ~= 'F');
         line = fgets(file);
     end
-    % names_rank = 0; num_named = 0;
-
 catch
     fprintf('Error: File cannot be opened\n');
     names_rank = -1; num_named = -1; yr = -1;
