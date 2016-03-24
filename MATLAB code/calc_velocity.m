@@ -7,14 +7,14 @@ function [velocity_out] = calc_velocity(nid,N,lim)
 %
 %   N:      Specifies which column in 2nd dim to compute (default=all)
 N = 1:size(nid,2);
-
+%{
 lambda = 8;
 factorial_approx = @(n) sqrt(2*pi.*n).*(n/exp(1)).^n;
 f_poisson = @(x,lambda) (lambda.^x).*exp(-lambda)./factorial_approx(x);
 f_poisson = @(x,lambda) (lambda.^x).*exp(-lambda)./factorial(x);
 integrate = @(f,a,b) discrete_integral(f,a,b);
 %out = integral(@(x)f_poisson(x,lambda),0,10);
-
+%}
 % Consider just squaring difference of place in top 20
 %{
 output1 = zeros(size(nid));
@@ -31,9 +31,6 @@ for k = 2:size(nid,3)
                 if isempty(i_prev) && nid(end,j,k) < 1; i_prev = find(nid(:,j,k) < 1); 
                 elseif isempty(i_prev); i_prev = size(nid,1);end
                 velocity_out(i,j,k) = i - i_prev(1);
-                %output1(i,j,k) = (i - i_prev).^2;
-                %output2(i,j,k) = integrate(@(x)f_poisson(x,lambda),min(i,i_prev),max(i,i_prev));
-                %output3(i,j,k) = integrate(@(x)f_poisson(x,lambda),min(i,i_prev),max(i,i_prev));
             end
         end
         disp(['Completed k = ',num2str(k)]);

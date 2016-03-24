@@ -78,26 +78,20 @@ legend('Male','Female');
 
 % First create Unique IDs for all names for easier computation.
 if ~exist('name_list','var') || ~exist('ssid_rank_data','var') 
-    [name_list,ssid_rank_data] = create_name_ID(ss_rank_data); 
+    [name_list,ssid_rank_data] = create_name_ID2(ss_rank_data); 
     save('NameDataFull.mat','ss_count_data','ss_rank_data','yrs','name_list','ssid_rank_data');
 end
 
-vo = calc_velocity(NameID);
-
-figure;
-diff_total = squeeze(sum(abs(vo),1));
-plot(yrs,medfilt1(squeeze(diff_total)',10));
-
-
-
+vo = calc_velocity(ssid_rank_data);
+vo2 = square_calc(vo)
 % Comparing the name differential in top 10, 25, 50, 100, 250 and 1000
 % names
 N = [10,25,50,100,250,1000];
 figure;
 for i = 1:length(N)
     subplot(3,2,i);
-    diff_total = squeeze(sum(abs(vo(1:N(i),:,:)),1));
-    plot(yrs,medfilt1(squeeze(diff_total)',10));
+    diff_total = squeeze(sum(abs(vo(1:N(i),:,2:end)),1));
+    plot(yrs(2:end),filter(ones(5,1)/5,1,squeeze(diff_total)'));
     str = ['Top ' num2str(N(i)) ' Name Differentials'];
     title(str);
     xlabel('Year'); ylabel('Summation of Yearly differentials');

@@ -9,11 +9,11 @@ f_poisson = @(x,lambda) (lambda.^x).*exp(-lambda)./factorial(x);
 integrate = @(f,a,b) discrete_integral(f,a,b);
 out = zeros(size(vo));
 
-for i = 1:size(vo,1)
+for k = 1:size(vo,3)
     for j = 1:size(vo,2)
-        for k = 1:size(vo,3)
-            a = min(i,i+vo(i,j,k));
-            b = max(i,i+vo(i,j,k));
+        for i = 1:size(vo,1)
+            a = min(i,i-vo(i,j,k));
+            b = max(i,i-vo(i,j,k));
             %{
             if sign(vo(i,j,k)) == sign(-1)
                 a = i + vo(i,j,k);
@@ -23,7 +23,9 @@ for i = 1:size(vo,1)
                 b = i;
             %}
             out(i,j,k) = integrate(@(x)f_poisson(x,lambda),a,b);
-
+            
         end
+        
     end
+    display_progress(k)
 end

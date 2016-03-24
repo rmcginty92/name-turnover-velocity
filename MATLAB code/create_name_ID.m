@@ -7,7 +7,7 @@ Mcount = 1;
 NameList(1,:,1) = NR(1,1:2,1);
 NameList(1,:,2) = {[1],[1]};
 for k = 1:size(NR,3)
-    disp(k); tic;
+    display_progress(k); tic;
     for i = 1:size(NR,1)
         M = NR{i,1,k}; F = NR{i,2,k};
         ptr = 1; isF = 0; isM = 0;M_ID = 0; F_ID = 0;
