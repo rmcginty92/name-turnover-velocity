@@ -99,7 +99,17 @@ def import_data(save=True,try_from_csv=False,saved_csvs=['MaleRankCount.csv','Fe
         export_data(df=ranks_ids['F'],filename='FemaleRankIDs.csv',path='data')
     return name_id,ranks_count,ranks_ids
 
-def export_data(df=None,filename='temp.csv',path=None,):
+
+def import_csv(path='data',file='temp.csv'):
+    cwd = os.getcwd()
+    subdir = path
+    path = os.path.join(cwd,subdir)
+    with open(os.path.join(path,file)) as f:
+        return pd.read_csv(f)
+    return pd.DataFrame()
+
+
+def export_data(df=None,filename='temp.csv',path=None):
     if 'sys' not in vars().keys():
         import sys
     if 'os' not in vars().keys():
@@ -120,8 +130,11 @@ def export_data(df=None,filename='temp.csv',path=None,):
         df.to_csv(fullpath,index=False)
     except:
         sys.stdout.write('\nerror: Writing to date file')
-        import time
-        df.to_csv('temp'+time.strftime('%y_%m_%d__%H%M%S')+'.csv')
+        try:
+            import time
+            df.to_csv('temp'+time.strftime('%y_%m_%d__%H%M%S')+'.csv')
+        except:
+            sys.stdout.write('\nerror: Writing to date file failed')
 
 
 def str2hash(string,type='djb2',maxval=2**32-1):
