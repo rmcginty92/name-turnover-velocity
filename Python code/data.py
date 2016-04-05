@@ -7,7 +7,7 @@ import pandas as pd
 
 def import_data(save=True,try_from_csv=False,saved_csvs=['MaleRankCount.csv','FemaleRankCount.csv',
                                                                        'MaleRankIDs.csv','FemaleRankIDs.csv',
-                                                                       'male_name_ids.csv','female_name_ids.csv']):
+                                                                    'male_name_ids.csv','female_name_ids.csv']):
     cwd = os.getcwd()
     subdir = 'data'
     path = os.path.join(cwd,subdir)
@@ -15,7 +15,8 @@ def import_data(save=True,try_from_csv=False,saved_csvs=['MaleRankCount.csv','Fe
     (_,_,files) = dir_info.__next__()
     csv_files = set([file for file in files if '.csv' in file])
     txt_files = [file for file in files if '.txt' in file]
-    name_id = {'M':{},'F':{}}
+    name_id2str = {'M':{},'F':{}}
+    name_str2id = {'M':{},'F':{}}
     ranks_count = {'M':None,'F':None}
     ranks_ids = {'M':None,'F':None}
     if try_from_csv and len(saved_csvs) == 6 and csv_files.issuperset(saved_csvs):
@@ -24,28 +25,50 @@ def import_data(save=True,try_from_csv=False,saved_csvs=['MaleRankCount.csv','Fe
             sys.stdout.flush()
             show_status(0./6)
             with open(os.path.join(path,saved_csvs[0])) as f:
-                ranks_count['M'] = pd.read_csv(f)
+                df = pd.read_csv(f)
+                try:
+                    df.columns = [int(yr) for yr in df.columns]
+                except:
+                    pass
+                ranks_count['M'] = df
             show_status(1./6)
             with open(os.path.join(path,saved_csvs[1])) as f:
-                ranks_count['F'] = pd.read_csv(f)
+                df = pd.read_csv(f)
+                try:
+                    df.columns = [int(yr) for yr in df.columns]
+                except:
+                    pass
+                ranks_count['F'] = df
             show_status(2./6)
             with open(os.path.join(path,saved_csvs[2])) as f:
-                ranks_ids['M'] = pd.read_csv(f)
+                df = pd.read_csv(f)
+                try:
+                    df.columns = [int(yr) for yr in df.columns]
+                except:
+                    pass
+                ranks_ids['M'] = df
             show_status(3./6)
             with open(os.path.join(path,saved_csvs[3])) as f:
-                ranks_ids['F'] = pd.read_csv(f)
+                df = pd.read_csv(f)
+                try:
+                    df.columns = [int(yr) for yr in df.columns]
+                except:
+                    pass
+                ranks_ids['F'] = df
             show_status(4./6)
             with open(os.path.join(path,saved_csvs[4])) as f:
                 curr_reader = csv.reader(f)
                 for id,name in curr_reader:
-                    name_id['M'][int(id)] = name
+                    name_id2str['M'][int(id)] = name
+                    name_str2id['M'][name] = int(id)
             show_status(5./6)
             with open(os.path.join(path,saved_csvs[5])) as f:
                 curr_reader = csv.reader(f)
                 for id,name in curr_reader:
-                    name_id['F'][int(id)] = name
+                    name_id2str['F'][int(id)] = name
+                    name_str2id['F'][name] = int(id)
             show_status(1)
-            return name_id, ranks_count, ranks_ids
+            return {'id2str':name_id2str,'str2id':name_str2id}, ranks_count, ranks_ids
         except:
             sys.stdout.write("\nError: Could not import from CSV. Attempting import from txt files\n")
             sys.flush()
@@ -60,14 +83,15 @@ def import_data(save=True,try_from_csv=False,saved_csvs=['MaleRankCount.csv','Fe
             data = list(csv.reader(f))
             for name,gender,births in data:
                 h = str2hash(name,maxval=high_prime)
-                hval = name_id.get(h,'-1')
+                hval = name_id2str[gender].get(h,'-1')
                 count = 1
                 while name != hval and hval != '-1':
                     h = (h**count + ord(name[0])**count + ord(name[-1])**count) % high_prime
                     count+=1
-                    hval = name_id.get(h,'-1')
+                    hval = name_id2str[gender].get(h,'-1')
                 if name != hval:
-                    name_id[gender][h] = name
+                    name_id2str[gender][h] = name
+                    name_str2id[gender][name] = h
                 rankings[i][gender].append((h,births))
             mmax_len = max(mmax_len,len(rankings[i]['M']))
             fmax_len = max(fmax_len,len(rankings[i]['F']))
@@ -89,25 +113,37 @@ def import_data(save=True,try_from_csv=False,saved_csvs=['MaleRankCount.csv','Fe
         sys.stdout.flush()
         with open(os.path.join('data','male_name_ids.csv'),'w',newline='') as fout:
             w = csv.writer(fout)
-            w.writerows(name_id['M'].items())
+            w.writerows(name_id2str['M'].items())
         with open(os.path.join('data','female_name_ids.csv'),'w',newline='') as fout:
             w = csv.writer(fout)
-            w.writerows(name_id['F'].items())
+            w.writerows(name_id2str['F'].items())
         export_data(df=ranks_count['M'],filename='MaleRankCount.csv',path='data')
         export_data(df=ranks_count['F'],filename='FemaleRankCount.csv',path='data')
         export_data(df=ranks_ids['M'],filename='MaleRankIDs.csv',path='data')
         export_data(df=ranks_ids['F'],filename='FemaleRankIDs.csv',path='data')
-    return name_id,ranks_count,ranks_ids
+    return {'id2str':name_id2str,'str2id':name_str2id},ranks_count,ranks_ids
 
 
 def import_csv(path='data',file='temp.csv'):
     cwd = os.getcwd()
     subdir = path
     path = os.path.join(cwd,subdir)
-    with open(os.path.join(path,file)) as f:
-        return pd.read_csv(f)
-    return pd.DataFrame()
+    try:
+        with open(os.path.join(path,file)) as f:
+            df = pd.read_csv(f)
+            try:
+                df.columns = [int(yr) for yr in df.columns]
+            except:
+                pass
+            return df
+    except:
+        return pd.DataFrame()
 
+
+def import_letters(path='data',file='letter_frequency.txt'):
+    pwd = os.getcwd()
+    path_to_file = os.path.join(pwd,path,file)
+    return pd.Series.from_csv(path_to_file)
 
 def export_data(df=None,filename='temp.csv',path=None):
     if 'sys' not in vars().keys():
@@ -156,8 +192,9 @@ def str2hash(string,type='djb2',maxval=2**32-1):
 def show_status(perc):
     sys.stdout.write('\r')
     sys.stdout.write("[%-20s] %d%%" % ('='*int(perc*100/5), int(perc*100)))
+    if 100==int(perc*100): sys.stdout.write('\n')
     sys.stdout.flush()
-    sleep(0.01)
+    sleep(0.1)
 
 if __name__ == "__main__":
     #a,b,c = import_data()
