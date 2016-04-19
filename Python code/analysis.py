@@ -38,9 +38,9 @@ cur_fig = 1
 if verbose:print("\nStarting Analysis...")
 if 0: # calculating basic stuff
     if verbose: print("Plotting total births per year and number of Unique names used per year...")
-    #plot_the_basics(rcm,rcf)
+    plot_the_basics(rcm,rcf)
     cur_fig+=1
-    #plot_top_perc_name_stats(rcm,rcf,fignum=cur_fig)
+    plot_top_perc_name_stats(rcm,rcf,fignum=cur_fig)
     cur_fig+=1
     plot_rank_count_values(rc=rcm,fignum=cur_fig,use_intervals=False,lim=50)
     cur_fig+=1
@@ -68,34 +68,43 @@ if 0:
 
 ''' Analysis of historical Individual Name Usage '''
 if 1:
-    numi,numc = calc_name_usage(rid=ridm,rc=rcm,nid=id2nm,load_saved=[True,True],save_file=[True,True],verbose = True,
+    numi,numc = calc_name_usage(rid=ridm,rc=rcm,nid=id2nm,load_saved=[True,True],save_file=[False,False],verbose = True,
                                 filename=['MaleNameUsageStatsIndex.csv','MaleNameUsageStatsCount.csv'])
-    nufi,nufc = calc_name_usage(rid=ridf,rc=rcf,nid=id2nf,load_saved=[True,True],save_file=[True,True],verbose = True,
+    nufi,nufc = calc_name_usage(rid=ridf,rc=rcf,nid=id2nf,load_saved=[True,True],save_file=[False,False],verbose = True,
                                 filename=['FemaleNameUsageStatsIndex.csv','FemaleNameUsageStatsCount.csv'])
     if 0:
         plot_top_name_trajectories(rid_df=ridm,name_usage_df=numi,N=20,cur_fig=cur_fig)
         plot_top_name_trajectories(rid_df=ridf,name_usage_df=nufi,N=20,cur_fig=cur_fig)
 
     N = 50
-    topN_stm = ridm[ridm.columns[0]][0:N]
-    topN_endm = ridm[ridm.columns[-1]][0:N]
-    topN_both = list(set((topN_stm)+(topN_endm)))
+    topN_stm = list(set(ridm[ridm.columns[0]][0:N]).difference(set(ridm[ridm.columns[-1]][0:N])))
+    topN_endm = list(set(ridm[ridm.columns[-1]][0:N]).difference(set(ridm[ridm.columns[0]][0:N])))
+    topN_both = list(set(ridm[ridm.columns[0]][0:N]).intersection(set(ridm[ridm.columns[-1]][0:N])))
+
+    hrm = numi.min(axis=1).to_frame(name='Highest Rank')
+    avgm = numi.mean(axis=1).to_frame(name='Average Rank')
+    snm = numc.sum(axis=1).to_frame(name='Sum')
+    cavgm = numc.mean(axis=1).to_frame(name='Average Count')
+    id2attrm = calc_name_features(id2n=id2nm)
+    xm = pd.DataFrame(data=np.array(list(map(lambda x: x[0],id2attrm.values()))),columns=['First Letter'],index=id2attrm.keys()) # Letter
+    ym = pd.DataFrame(data=np.array(list(map(lambda x: x[1],id2attrm.values()))),columns=['Syllables'],index=id2attrm.keys()) # Number of Syllables
+    zm = pd.DataFrame(data=np.array(list(map(lambda x: x[2],id2attrm.values()))),columns=['Length'],index=id2attrm.keys()) # Length of Name
+    ninfom = pd.concat([hrm,avgm,snm,cavgm,xm,ym,zm],axis=1)
 
 
-    hrm = numi.min(axis=1)
-    highestMeanm = numi.mean(axis=1)
-    nameCountTotalsm = numc.sum(axis=1)
-    id2attrm = calc_name_features(id2nm=id2nm)
-
-
-    topN_stf = ridm[ridf.columns[0]][0:N]
-    topN_endf = ridm[ridf.columns[0]][0:N]
-    topN_bothf = list(set((topN_stf)+(topN_endf)))
-
-    highestRankf = nufi.min(axis=1)
-    highestMeanf = nufc.mean(axis=1)
-    nameCountTotalsf = nufc.sum(axis=1)
-    id2attrf = calc_name_features(id2nm=id2nf)
+    topN_stf = list(set(ridf[ridf.columns[0]][0:N]).difference(set(ridf[ridf.columns[-1]][0:N])))
+    topN_endf = list(set(ridf[ridf.columns[-1]][0:N]).difference(set(ridf[ridf.columns[0]][0:N])))
+    topN_bothf = list(set(ridf[ridf.columns[0]][0:N]).intersection(set(ridf[ridf.columns[-1]][0:N])))
+    hr = nufi.min(axis=1).to_frame(name='Highest Rank')
+    avg = nufi.mean(axis=1).to_frame(name='Average Rank')
+    sn = nufc.sum(axis=1).to_frame(name='Sum')
+    cavg = nufc.mean(axis=1).to_frame(name='Average Count')
+    rng = (nufi.max(axis=1)-nufi.min(axis=1)).to_frame(name='Range')
+    id2attrf = calc_name_features(id2n=id2nf)
+    xf = pd.DataFrame(data=np.array(list(map(lambda x: x[0],id2attrf.values()))),columns=['First Letter'],index=id2attrf.keys()) # Letter
+    yf = pd.DataFrame(data=np.array(list(map(lambda x: x[1],id2attrf.values()))),columns=['Syllables'],index=id2attrf.keys()) # Number of Syllables
+    zf = pd.DataFrame(data=np.array(list(map(lambda x: x[2],id2attrf.values()))),columns=['Length'],index=id2attrf.keys()) # Length of Name
+    ninfof = pd.concat([hr,avg,sn,cavg,rng,xf,yf,zf],axis=1)
 
     # Calculate Number of different Names across
     if 0:
@@ -103,32 +112,26 @@ if 1:
         cur_fig+=1
 
 
-    ### Histogram Data
-    x = np.array(list(map(lambda x: x[0],id2attrm.values()))) # Letter
-    y = np.array(list(map(lambda x: x[1],id2attrm.values()))) # Number of Syllables
-    z = np.array(list(map(lambda x: x[2],id2attrm.values()))) # Length of Name
-
     if 0:
         plot_mf_name_histograms(id2attrm=id2attrm,id2attrf=id2attrf,cur_fig=cur_fig)
         cur_fig+=1
 
-    if 1: # Calculate Name length with First Letter of names
+    if 0:  # Calculate Name length with First Letter of names
         plot_heatmap_len_vs_letter(id2attr=id2attrm,cur_fig=cur_fig,gender='Males')
         cur_fig+=1
         plot_heatmap_len_vs_letter(id2attr=id2attrm,cur_fig=cur_fig,gender='Females')
         cur_fig+=1
 
-    if 0: # Plotting Syllables and Length
+    if 0:  # Plotting Syllables and Length
         plot_heatmap_len_vs_syllables(id2attr=id2attrm,cur_fig=cur_fig,gender='Males')
         cur_fig+=1
         plot_heatmap_len_vs_syllables(id2attr=id2attrf,cur_fig=cur_fig,gender='Females')
         cur_fig+=1
 
-    if 1: # Compare General Word usage to word usage from
-        letter_freqs = data.import_letters()
-        mfreqd = letter_freq(id2nm.values())
-        mfreqs = pd.Series(data=list(mfreqd.values()),index=list(mfreqd.keys()))
-        ffreqd = letter_freq(id2nf.values())
-        ffreqs = pd.Series(data=list(ffreqd.values()),index=list(ffreqd.keys()))
+    if 0:  # Compare General Word usage to word usage from
+        plot_mf_name_letter_counts(id2nm=id2nm,id2nf=id2nf)
+
+    if 1:
+        plot_diff_hist_len_syll_data(olddf=ninfom.loc[topN_stm],newdf=ninfom.loc[topN_endm])
 
 

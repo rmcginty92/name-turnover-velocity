@@ -82,6 +82,17 @@ def plot_top_perc_name_stats(rcm,rcf,lims=[0.001,0.005,0.01,0.05],fignum = 1):
     plt.show()
 
 
+def plot_zipf_comparison(rc,fignum=1):
+    years = np.arange(start=rc.columns[0],stop=rc.columns[-1])
+    year_cm = np.array([[(years[i]-years.min())/(years.max()-years.min()) for i in range(len(years))],
+                        [0]*len(years),
+                        [(years.max()-years[i])/(years.max()-years.min()) for i in range(len(years))]])
+    for i,col in enumerate(rc.columns):
+        plt.plot(np.log10(rc.index))
+
+def zipf(n,b=1.07):
+    return 1/n**b
+
 
 def plot_rank_count_values(rc,fignum=1,use_intervals=True,interval=5,lim = 50,ismale=True):
     global mymap
@@ -267,13 +278,13 @@ def plot_mf_name_histograms(id2attrm,id2attrf,cur_fig=1):
 
     plt.figure(cur_fig)
     ax1 = plt.subplot(1,3,1)
-    ax1.hist(xm,bins=len(set(xm)),lw=3,fc=(0.05,0,0.85,0.4),normed=1)
-    ax1.hist(xf,bins=len(set(xf)),lw=3,fc=(0.85,0,0.05,0.4),normed=1)
-    plt.xticks(np.arange(65,91))
+    a = ax1.hist(xm,bins=len(set(xm)),lw=3,fc=(0.05,0,0.85,0.4),normed=1,align='left')
+    ax1.hist(xf,bins=len(set(xf)),lw=3,fc=(0.85,0,0.05,0.4),normed=1,align='left')
+    plt.xticks(a[1])
     labels = [chr(int(val)) for val in np.arange(65,91)]
     ax1.set_xticklabels(labels)
     x1,x2,y1,y2 = plt.axis()
-    plt.axis([65,90,y1,y2])
+    plt.axis([ord('A')-.5,ord('Z')-.5,y1,y2])
     plt.legend(['Male','Female'])
     plt.title('Histogram of First Letters')
     plt.xlabel('Letters (A-Z)')
@@ -297,8 +308,6 @@ def plot_mf_name_histograms(id2attrm,id2attrf,cur_fig=1):
     plt.show()
 
 
-
-
 def plot_heatmap_len_vs_letter(id2attr,cur_fig=1,gender='Males'):
     x = np.array(list(map(lambda x: x[0],id2attr.values()))) # Letter
     z = np.array(list(map(lambda x: x[2],id2attr.values()))) # Length of Name
@@ -308,7 +317,6 @@ def plot_heatmap_len_vs_letter(id2attr,cur_fig=1,gender='Males'):
     xhist,xedges= np.histogram(x, bins=len(set(x)),normed=1)
     plt.hist2d(x, z, bins=(len(set(x)),len(set(z))),cmap=cm.YlOrRd_r,normed=1)
     labels = [chr(int(val)) for val in np.arange(65,91)]
-    ax1.set_xticklabels(labels)
     ax1.set_xticklabels([])
     ax1.set_yticklabels([])
     x1,x2,y1,y2 = plt.axis()
@@ -350,6 +358,54 @@ def plot_heatmap_len_vs_syllables(id2attr,cur_fig=1,gender='Males'):
     ax3.set_yticklabels([])
     plt.show()
 
+
+def plot_mf_name_letter_counts(id2nm,id2nf,cur_fig=1):
+    freqs = pd.DataFrame(data.import_letters(),columns=['General'])
+    freqs = freqs.sort_index()
+    mfreqd = letter_freq(id2nm.values())
+    mfreqs = pd.Series(data=list(mfreqd.values()),index=list(mfreqd.keys())).sort_index().to_frame(name='Males')
+    ffreqd = letter_freq(id2nf.values())
+    ffreqs = pd.Series(data=list(ffreqd.values()),index=list(ffreqd.keys())).sort_index().to_frame(name='Females')
+    freqs.index = mfreqs.index
+    freqs = pd.concat([freqs,mfreqs,ffreqs],join='outer',axis=1)
+    nfreqs = df_norm(freqs,use_lim=False,as_pdf=True)
+    ax_mf = plt.subplot2grid((3,8),(0,0),colspan=3,rowspan=1)
+    plt.tight_layout()
+    nfreqs[['Males','Females']].plot.bar(ax=ax_mf,color=[(0.05,0,0.85,0.4),(0.85,0,0.05,0.4)],width=0.8,align='center')
+    ax_mg = plt.subplot2grid((3,8),(1,0),colspan=3,rowspan=1)
+    nfreqs[['General','Males']].plot.bar(ax=ax_mg,color=[(0,0.75,0.05,0.4),(0.05,0,0.85,0.4)],width=0.8,align='center')
+    ax_fg = plt.subplot2grid((3,8),(2,0),colspan=3,rowspan=1)
+    nfreqs[['General','Females']].plot.bar(ax=ax_fg,color=[(0,0.75,0.05,0.4),(0.85,0,0.05,0.4)],width=0.8,align='center')
+    ax_mfg = plt.subplot2grid((3,8),(0,3),colspan=5,rowspan=3)
+    nfreqs.plot.bar(ax=ax_mfg,color=[(0,0.75,0.05,0.4),(0.05,0,0.85,0.4),(0.85,0,0.05,0.4)],width=0.9)
+    plt.show()
+    plt.figure(cur_fig+1)
+    ax = plt.subplot(111)
+    nfreqs.loc[list('aeiouy')].plot.bar(ax=ax,color=[(0,0.75,0.05,0.4),(0.05,0,0.85,0.4),(0.85,0,0.05,0.4)],width=0.75)
+    plt.title('Vowel Use')
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_diff_hist_len_syll_data(olddf,newdf,cur_fig=1):
+    plt.figure(cur_fig)
+
+    ax2 = plt.subplot(1,2,1)
+    olddf['Syllables'].plot.hist(ax=ax2,bins=len(set(olddf['Syllables'].unique())),lw=3,fc=(0.05,0,0.85,0.4),normed=1)
+    newdf['Syllables'].plot.hist(ax=ax2,bins=len(set(newdf['Syllables'].unique())),lw=3,fc=(0.0,0.75,0.05,0.35),normed=1)
+    plt.legend(['Top Names in 1880','Top Names in 2013'])
+    plt.title('Histogram of Syllable Count')
+    plt.xlabel('Number of Syllables')
+    plt.ylabel('Probability')
+
+    ax3 = plt.subplot(1,2,2)
+    olddf['Length'].plot.hist(bins=len(set(olddf['Length'].unique())),lw=3,fc=(0.05,0,0.85,0.4),normed=1)
+    newdf['Length'].plot.hist(bins=len(set(newdf['Length'].unique())),lw=3,fc=(0.0,0.75,0.05,0.35),normed=1)
+    plt.legend(['Top Names in 1880','Top Names in 2013'])
+    plt.title('Histogram of Name Length')
+    plt.xlabel('Length of Name')
+    plt.ylabel('Probability')
+    plt.show()
 
 
 
@@ -407,17 +463,18 @@ def calc_yearly_diff(rc,rid,load_saved=[True,True],save_file=[False,False],
     return rc_diffi,rc_diffc
 
 
-'''
-Returns a list of each name's Ranking trajectory.
-'''
+
+#Returns a list of each name's Ranking trajectory.
 def calc_name_usage(rid,rc,nid,load_saved=[True,True],save_file=[False,False],
                     filename=['MaleNameUsageStatsIndex.csv','MaleNameUsageStatsCount.csv'],verbose=False):
     [nu_statsi,nu_statsc],isloaded = import_dfs(filenames=filename,load_saved=load_saved,verbose=verbose)
     if isloaded[0] and nu_statsi.index[0:5].tolist() != list(nid.keys())[0:5]: nu_statsi.index = list(nid.keys())
     else: nu_statsi = pd.DataFrame(index=list(nid.keys()),columns=rc.columns)
-    if isloaded[1] and nu_statsi.index[0:5].tolist() != list(nid.keys())[0:5]:nu_statsc.index = list(nid.keys())
+    if isloaded[1] and nu_statsc.index[0:5].tolist() != list(nid.keys())[0:5]:nu_statsc.index = list(nid.keys())
     else: nu_statsc = pd.DataFrame(index=list(nid.keys()),columns=rc.columns)
-    if all(isloaded): return nu_statsi, nu_statsc
+    if all(isloaded):
+        if any(save_file): save_dfs(dfs=[nu_statsi,nu_statsc],filenames=filename,save_file=save_file,verbose=verbose)
+        return nu_statsi, nu_statsc
     if verbose: print("Recalculating..")
     tally = 0
     if verbose: print("Starting computations")
@@ -429,28 +486,28 @@ def calc_name_usage(rid,rc,nid,load_saved=[True,True],save_file=[False,False],
                 ind = res.index[0]
                 count = rc[yr][ind]
             if not isloaded[0]:
-                nu_statsi[yr][nid[id]] = ind
+                nu_statsi[yr][id] = ind
             if not isloaded[1]:
-                nu_statsc[yr][nid[id]] = count
+                nu_statsc[yr][id] = count
         tally+=1
         perc = tally/len(nid.keys())
         if verbose and int(100*perc)%1 == 0 and perc > 0.02: data.show_status(perc)
     if verbose: print("\nFinished.")
-    save_dfs(dfs=[nu_statsi,nu_statsc],filenames=filename,save_file=save_file,verbose=verbose)
+    if any(save_file): save_dfs(dfs=[nu_statsi,nu_statsc],filenames=filename,save_file=save_file,verbose=verbose)
     return nu_statsi,nu_statsc
 
-
-def calc_name_features(id2nm):
+# Extracts name length, syllables, first letter
+def calc_name_features(id2n):
     id2attr = {}
-    for key in id2nm.keys():
-        name = id2nm[key]
+    for key in id2n.keys():
+        name = id2n[key]
         ascii_val = ord(name[0])
         num_sylls = syllables(name)
         length = len(name)
         id2attr[key] = [ascii_val,num_sylls,length]
     return id2attr
 
-
+# Creates counter of all characters used in list of words passed
 def letter_freq(wordlist):
     freq_dict = Counter()
     for name in wordlist:
@@ -460,9 +517,12 @@ def letter_freq(wordlist):
             freq_dict[c]+=1
     return freq_dict
 
+
+
 ###############################
 ####### Basic Functions #######
 ###############################
+
 
 # Imports filenames provided
 def import_dfs(filenames,load_saved,verbose):
@@ -482,6 +542,7 @@ def import_dfs(filenames,load_saved,verbose):
             if verbose: print("Import successful")
     return dfs,isloaded
 
+
 # Saves passed DataFrames to Files with specified filenames
 def save_dfs(dfs,filenames,save_file,verbose):
     if len(save_file) == len(dfs) and len(filenames) == len(dfs):
@@ -489,10 +550,6 @@ def save_dfs(dfs,filenames,save_file,verbose):
         for i in range(len(dfs)):
             if save_file[i]:
                 data.export_data(df=dfs[i],filename=filenames[i],path='data')
-
-
-
-
 
 
 # Normalizing DataFrame column data by column maxes and using limit
@@ -507,12 +564,14 @@ def df_norm(df,use_lim=True,lim=5000,as_pdf=False,full_pdf=True):
         dists = df[0:lim]/df[0:lim].max()
     return dists
 
+
 # Normalizing Series Data
 def s_norm(s,as_pdf=False):
     if as_pdf:
         return s/s.sum()
     else:
         return s/s.max()
+
 
 # Calculates number of syllables in the string variable word
 def syllables(word):
