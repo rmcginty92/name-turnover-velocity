@@ -1,2 +1,2 @@
-# name-turnover-velocity
-Analysis of volatility of popular baby name rankings through the decades
+# Name Usage Analysis in United States 
+Analysis of name usage across the US through the decades.
